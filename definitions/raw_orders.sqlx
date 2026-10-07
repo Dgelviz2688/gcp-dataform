@@ -1,0 +1,7 @@
+config {
+    type: "declaration",
+    database: "gcp-dataform",
+    schema: "raw_data",
+    name: "orders",
+    description: "Tabla transaccional de ventas"
+}
