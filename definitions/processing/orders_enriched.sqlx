@@ -1,0 +1,35 @@
+config {
+  type: "incremental",
+  schema: "dataform_processing",
+  description: "Tabla incremental de ordenes enriquecida con margen estimado",
+  uniqueKey: ["order_id"], 
+  bigquery: {
+    partitionBy: "DATE(created_at)", 
+    clusterBy: ["country", "status"] 
+  },
+  tags: ["daily_run"]
+}
+
+pre_operations {
+  DECLARE last_checkpoint DEFAULT (
+    ${when(incremental(),
+      `SELECT MAX(created_at) FROM ${self()}`, 
+      `SELECT TIMESTAMP("2020-01-01")`         
+    )}
+  )
+}
+
+SELECT
+  o.order_id,
+  o.user_id,
+  o.product_id,
+  o.status,
+  o.country,
+  o.sale_price,
+  ROUND(o.sale_price * 0.30, 2) as estimated_margin,
+  o.created_at,
+  CURRENT_TIMESTAMP() as processed_at 
+FROM
+  ${ref("stg_orders")} o
+WHERE
+  o.created_at > last_checkpoint
