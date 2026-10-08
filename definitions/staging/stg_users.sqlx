@@ -1,0 +1,13 @@
+config {
+  type: "view",
+  schema: "dataform_staging",
+  tags: ["staging"]
+}
+
+SELECT
+  user_id,
+  name,
+  COALESCE(membership_tier, 'Standard') as membership_tier,
+  signup_date
+FROM
+  ${ref("users")}

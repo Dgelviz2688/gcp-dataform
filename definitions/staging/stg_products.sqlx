@@ -1,0 +1,13 @@
+config {
+  type: "view",
+  schema: "dataform_staging",
+  tags: ["staging"]
+}
+
+SELECT
+  product_id,
+  product_name,
+  category,
+  cost as product_cost
+FROM
+  ${ref("products")}

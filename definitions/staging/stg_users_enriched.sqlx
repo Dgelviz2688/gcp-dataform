@@ -1,0 +1,12 @@
+config {
+  type: "view",
+  schema: "dataform_staging"
+}
+
+SELECT
+  user_id,
+  membership_tier,
+  CASE WHEN membership_tier = 'VIP' THEN 0.15 ELSE 0.0 END as discount_rate
+FROM
+  ${ref("users")}
+

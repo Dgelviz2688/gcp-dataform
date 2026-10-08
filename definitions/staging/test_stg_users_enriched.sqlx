@@ -1,0 +1,12 @@
+config {
+  type: "test",
+  dataset: "stg_users_enriched"
+}
+
+input "users" {
+  SELECT 1 as user_id, 'VIP' as membership_tier UNION ALL
+  SELECT 2 as user_id, 'Standard' as membership_tier
+}
+
+SELECT 1 as user_id, 'VIP' as membership_tier, 0.15 as discount_rate UNION ALL
+SELECT 2 as user_id, 'Standard' as membership_tier, 0.0 as discount_rate
