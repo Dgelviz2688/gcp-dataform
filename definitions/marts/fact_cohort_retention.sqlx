@@ -1,0 +1,33 @@
+config {
+  type: "table",
+  schema: "dataform_marts",
+  description: "Tabla de retención de cohortes de usuarios"
+}
+
+WITH first_purchase AS (
+  SELECT
+    user_id,
+    MIN(DATE_TRUNC(DATE(created_at), MONTH)) as cohort_month
+  FROM ${ref("orders_enriched")}
+  GROUP BY 1
+),
+user_activities AS (
+  SELECT
+    o.user_id,
+    DATE_DIFF(DATE_TRUNC(DATE(o.created_at), MONTH), fp.cohort_month, MONTH) as month_number,
+    o.sale_price
+  FROM ${ref("orders_enriched")} o
+  JOIN first_purchase fp ON o.user_id = fp.user_id
+)
+
+SELECT
+  fp.cohort_month,
+  ua.month_number,
+  COUNT(DISTINCT ua.user_id) as active_users,
+  SUM(ua.sale_price) as total_revenue,
+  COUNT(DISTINCT CASE WHEN u.membership_tier = 'VIP' THEN ua.user_id END) as vip_users
+FROM first_purchase fp
+JOIN user_activities ua ON fp.user_id = ua.user_id
+LEFT JOIN ${ref("snp_users_history")} u ON fp.user_id = u.user_id
+GROUP BY 1, 2
+ORDER BY 1, 2
