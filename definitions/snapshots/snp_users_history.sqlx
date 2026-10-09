@@ -1,0 +1,14 @@
+config {
+  type: "incremental",
+  schema: "dataform_snapshots",
+  uniqueKey: ["user_id"],
+  tags: ["daily_snapshot"]
+}
+
+SELECT
+  user_id,
+  name,
+  membership_tier,
+  signup_date
+FROM
+  ${ref("users")}
