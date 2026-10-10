@@ -5,7 +5,7 @@ config {
 }
 
 GRANT SELECT ON TABLE ${ref("fact_cohort_retention")}
-TO "service-828649986632@gcp-sa-dataform.iam.gserviceaccount.com";
+TO "serviceAccount:service-828649986632@gcp-sa-dataform.iam.gserviceaccount.com";
 
 DELETE FROM ${ref("orders_enriched")}
 WHERE created_at < DATE_SUB(CURRENT_DATE(), INTERVAL 5 YEAR);
