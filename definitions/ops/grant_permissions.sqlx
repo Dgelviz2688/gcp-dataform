@@ -4,7 +4,8 @@ config {
   dependencies: ["fact_cohort_retention"]
 }
 
-GRANT SELECT ON TABLE ${ref("fact_cohort_retention")}
+GRANT `roles/bigquery.dataViewer`
+ON TABLE ${ref("fact_cohort_retention")}
 TO "serviceAccount:service-828649986632@gcp-sa-dataform.iam.gserviceaccount.com";
 
 DELETE FROM ${ref("orders_enriched")}
