@@ -1,6 +1,5 @@
 config {
     type: "declaration",
-    database: "gcp-dataform",
     schema: "raw_data",
     name: "users",
     description: "Tabla dimensional de usuarios"

@@ -2,10 +2,19 @@ config {
   type: "incremental",
   schema: "dataform_processing",
   description: "Tabla incremental de ordenes enriquecida con margen estimado",
-  uniqueKey: ["order_id"], 
+  uniqueKey: ["order_id"],
   bigquery: {
-    partitionBy: "DATE(created_at)", 
-    clusterBy: ["country", "status"] 
+    partitionBy: "DATE(created_at)",
+    clusterBy: ["country", "status"]
+  },
+  columns: {
+    order_id: "Identificador único de la orden",
+    estimated_margin: "Margen estimado (30 % del precio de venta)",
+    processed_at: "Momento en que Dataform procesó la fila"
+  },
+  assertions: {
+    uniqueKey: ["order_id"],
+    nonNull: ["order_id", "user_id", "created_at"]
   },
   tags: ["daily_run"]
 }
@@ -13,8 +22,8 @@ config {
 pre_operations {
   DECLARE last_checkpoint DEFAULT (
     ${when(incremental(),
-      `SELECT MAX(created_at) FROM ${self()}`, 
-      `SELECT TIMESTAMP("2020-01-01")`         
+      `SELECT COALESCE(MAX(created_at), TIMESTAMP("2020-01-01")) FROM ${self()}`,
+      `SELECT TIMESTAMP("2020-01-01")`
     )}
   )
 }
@@ -28,7 +37,7 @@ SELECT
   o.sale_price,
   ROUND(o.sale_price * 0.30, 2) as estimated_margin,
   o.created_at,
-  CURRENT_TIMESTAMP() as processed_at 
+  CURRENT_TIMESTAMP() as processed_at
 FROM
   ${ref("stg_orders")} o
 WHERE

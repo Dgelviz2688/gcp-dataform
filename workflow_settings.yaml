@@ -1,5 +1,11 @@
-defaultProject: "gcp-dataform"
+defaultProject: "gcp-dataform"          # Reemplazar por tu PROJECT_ID
 defaultLocation: "US"
 defaultDataset: "dataform_staging"
 defaultAssertionDataset: "dataform_assertions"
 dataformCoreVersion: "3.0.56"
+vars:
+  # Principal IAM que recibirá lectura sobre los marts (Lab 6).
+  # Ej: "group:analytics@tu-dominio.com" o "user:persona@gmail.com". Vacío = GRANT deshabilitado.
+  reader_principal: ""
+  # Años de historia que se conservan en orders_enriched (Lab 6).
+  retention_years: "5"

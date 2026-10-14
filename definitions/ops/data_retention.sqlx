@@ -1,0 +1,8 @@
+config {
+  type: "operations",
+  tags: ["maintenance"],
+  description: "Política de retención: elimina órdenes con más antigüedad que vars.retention_years"
+}
+
+DELETE FROM ${ref("orders_enriched")}
+WHERE DATE(created_at) < DATE_SUB(CURRENT_DATE(), INTERVAL ${dataform.projectConfig.vars.retention_years} YEAR)
