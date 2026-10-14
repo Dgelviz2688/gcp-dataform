@@ -1,1 +1,5 @@
 node_modules/
+# Credenciales locales generadas por `dataform init-creds`: nunca deben versionarse
+.df-credentials.json
+# Llaves SSH del deploy key de Dataform
+dataform_github*

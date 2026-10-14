@@ -1,7 +1,20 @@
 config {
     type: "table",
     schema: "dataform_marts",
-    description: "Tabla de retención de cohortes de usuarios"
+    description: "Tabla de retención de cohortes de usuarios",
+    bigquery: {
+        clusterBy: ["cohort_month"]
+    },
+    columns: {
+        cohort_month: "Mes de la primera compra del usuario",
+        month_number: "Meses transcurridos desde la primera compra (0 = mes de alta)",
+        cohort_size: "Usuarios que forman la cohorte",
+        retention_rate: "active_users / cohort_size"
+    },
+    assertions: {
+        uniqueKey: ["cohort_month", "month_number"],
+        nonNull: ["cohort_month", "month_number"]
+    }
 }
 
 WITH
@@ -11,6 +24,14 @@ WITH
     MIN(DATE_TRUNC(DATE(created_at), MONTH)) AS cohort_month
   FROM
     ${ref("orders_enriched")}
+  GROUP BY
+    1 ),
+  cohort_size AS (
+  SELECT
+    cohort_month,
+    COUNT(*) AS cohort_size
+  FROM
+    first_purchase
   GROUP BY
     1 ),
   user_activities AS (
@@ -23,11 +44,24 @@ WITH
   JOIN
     first_purchase fp
   ON
-    o.user_id = fp.user_id )
+    o.user_id = fp.user_id ),
+  -- Versión vigente de cada usuario en el snapshot SCD2 (una fila por user_id)
+  current_users AS (
+  SELECT
+    user_id,
+    membership_tier
+  FROM
+    ${ref("snp_users_history")}
+  WHERE
+    TRUE
+  QUALIFY
+    ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY valid_from DESC) = 1 )
 SELECT
   fp.cohort_month,
   ua.month_number,
+  cs.cohort_size,
   COUNT(DISTINCT ua.user_id) AS active_users,
+  ROUND(SAFE_DIVIDE(COUNT(DISTINCT ua.user_id), cs.cohort_size), 4) AS retention_rate,
   SUM(ua.sale_price) AS total_revenue,
   COUNT(DISTINCT
     CASE
@@ -40,13 +74,15 @@ JOIN
   user_activities ua
 ON
   fp.user_id = ua.user_id
+JOIN
+  cohort_size cs
+ON
+  fp.cohort_month = cs.cohort_month
 LEFT JOIN
-  ${ref("snp_users_history")} u
+  current_users u
 ON
   fp.user_id = u.user_id
 GROUP BY
   1,
-  2
-ORDER BY
-  1,
-  2
+  2,
+  3

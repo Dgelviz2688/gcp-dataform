@@ -1,14 +1,46 @@
 config {
   type: "incremental",
   schema: "dataform_snapshots",
-  uniqueKey: ["user_id"],
+  description: "Historial de usuarios (SCD Tipo 2 append-only): una fila nueva por cada cambio detectado",
+  bigquery: {
+    clusterBy: ["user_id"]
+  },
+  columns: {
+    row_hash: "Huella de los atributos versionados; si cambia, se inserta una nueva versión",
+    valid_from: "Momento desde el cual esta versión del usuario es válida"
+  },
   tags: ["daily_snapshot"]
 }
 
+WITH source AS (
+  SELECT
+    user_id,
+    name,
+    membership_tier,
+    signup_date,
+    FARM_FINGERPRINT(TO_JSON_STRING(STRUCT(name, membership_tier, signup_date))) AS row_hash
+  FROM
+    ${ref("stg_users")}
+)
+
 SELECT
-  user_id,
-  name,
-  membership_tier,
-  signup_date
+  s.user_id,
+  s.name,
+  s.membership_tier,
+  s.signup_date,
+  s.row_hash,
+  CURRENT_TIMESTAMP() AS valid_from
 FROM
-  ${ref("users")}
+  source s
+${when(incremental(), `
+LEFT JOIN (
+  SELECT user_id, row_hash
+  FROM ${self()}
+  WHERE TRUE
+  QUALIFY ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY valid_from DESC) = 1
+) current_version
+  ON s.user_id = current_version.user_id
+WHERE
+  current_version.row_hash IS NULL
+  OR current_version.row_hash != s.row_hash
+`)}
